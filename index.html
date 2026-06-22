@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riyadh Industrial Week Expo Tracker</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --card: #1a2128;
+    --border: #2a333d;
+    --text: #e6e9ec;
+    --muted: #8a97a3;
+    --accent: #4f9dff;
+    --green: #3ddc84;
+    --yellow: #ffc857;
+    --red: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 1rem;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 0.25rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 0.5rem 0;
+    z-index: 10;
+  }
+  #search {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.7rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 16px;
+  }
+  select#filterGroup, select#filterInterest {
+    padding: 0.7rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 16px;
+  }
+  .stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .group-header {
+    margin: 1.2rem 0 0.5rem;
+    font-size: 1rem;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    transition: opacity 0.2s;
+  }
+  .card.done {
+    opacity: 0.5;
+  }
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .card-top input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+  .card-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex: 1;
+  }
+  .card.done .card-name {
+    text-decoration: line-through;
+  }
+  .card-priority {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+  .card-body {
+    margin-top: 0.5rem;
+    margin-left: 30px;
+  }
+  select.interest {
+    padding: 0.6rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #11161b;
+    color: var(--text);
+    font-size: 16px;
+    margin-bottom: 0.4rem;
+    width: 100%;
+  }
+  select.interest[data-val="very"] { border-color: var(--green); color: var(--green); }
+  select.interest[data-val="interested"] { border-color: var(--yellow); color: var(--yellow); }
+  select.interest[data-val="not"] { border-color: var(--red); color: var(--red); }
+  textarea.notes {
+    width: 100%;
+    min-height: 60px;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #11161b;
+    color: var(--text);
+    font-size: 16px;
+    resize: vertical;
+    font-family: inherit;
+  }
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 2rem 0;
+  }
+  #resetBtn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--red);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Riyadh Industrial Week Expo</h1>
+<div class="subtitle">Company tracker &mdash; tick off, rate interest, add notes</div>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search company...">
+  <select id="filterGroup">
+    <option value="">All groups</option>
+  </select>
+  <select id="filterInterest">
+    <option value="">All interest</option>
+    <option value="very">Very interested</option>
+    <option value="interested">Interested</option>
+    <option value="not">Not interested</option>
+    <option value="">Unrated</option>
+  </select>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div id="list"></div>
+
+<button id="resetBtn">Reset all data</button>
+
+<script>
+const COMPANIES = [
+  ["Priority 1", "Astra Polymers", ""],
+  ["Priority 1", "Ravago Middle East Company", ""],
+  ["Priority 1", "Natpet Schulman Specialty Plastic Compounds", ""],
+  ["Priority 1", "Ingenia Polymers Co. Ltd.", ""],
+  ["Priority 1", "Hotpack", ""],
+  ["Priority 1", "United Carton Industries Company", ""],
+  ["Priority 1", "Al Babtain Plastic and Insulation Materials Mfg. Co., Ltd", ""],
+  ["Priority 1", "Saudi Industrial Chemical Factory (SICF)", ""],
+  ["Priority 1", "Maharah Human Resources Company", ""],
+  ["Priority machinery", "Coperion Middle East", ""],
+  ["Priority machinery", "Zeppelin Systems", ""],
+  ["Priority machinery", "Delta Plastic Machinery FZC", ""],
+  ["Priority machinery", "Safe Automations Company Limited", ""],
+  ["Priority machinery", "Global Standard Technology", ""],
+  ["Priority machinery", "IDNS (Intelligent Digital Network Solutions)", ""],
+  ["Priority machinery", "Arabian Business Machines Company", ""],
+  ["Priority machinery", "Chapter One Consultancy - Aljady Platform", ""],
+  ["Priority 2", "Gulf Carton Factory Company", ""],
+  ["Priority 2", "Abdullah Ali Al-Shareef and Partners Company for Carton Containers", ""],
+  ["Priority 2", "Fursan Packaging Company", ""],
+  ["Priority 2", "Hyper Pack Industrial Co.", ""],
+  ["Priority 2", "Waseel Pack Industries", ""],
+  ["Priority 2", "Capri Pack Trading", ""],
+  ["Priority 2", "Advanced Flexible Packaging Co.", ""],
+  ["Priority 2", "Al Sharq Flexible Packaging Factories LLC", ""],
+  ["Priority 2", "Arab Malaysian Modern Packaging Co., Ltd.", ""],
+  ["Priority 2", "Arabian Plastic Industrial Co. (APICO)", ""],
+  ["Priority 2", "Falcon Plastic Products Company", ""],
+  ["Priority 2", "Saudi Plastic Factory Co.", ""],
+  ["Priority 2", "Saudi Foam Trays Manufacturing Company", ""],
+  ["Priority 2", "Precision Plastic Products Manufacturing Co., Ltd.", ""],
+  ["Priority 2", "Rayan Advanced Industrial Co.", ""],
+  ["Priority 2", "Al Amal Plastic Manufacturing Co.", ""],
+  ["Priority 2", "Basket House Plastic Factory Co.", ""],
+  ["Priority 2", "Neop Plastic Factory", ""],
+  ["Priority 2", "South Arabian Factory for Industry", ""],
+  ["Priority 2", "Mohammed Nasser Al-Furaidi Plastic Industries Factory Establishment", ""],
+  ["Priority 2", "Saeed Ali Ghodran Plastic Products Factory", ""],
+  ["Priority 2", "Al Adrak Al Naqi Plastic Company", ""],
+  ["Priority 2", "Factory Dara Al-Watan Plastic Production", ""],
+  ["Priority 2", "Samek Plastic Factory", ""],
+  ["Priority 2", "Industrial Resin Factory", ""],
+  ["Priority 2", "United Compounding Industrial Company", ""],
+  ["Priority 2", "Al Sama Printing Inks & Sundries Mfg. Co.", ""],
+  ["Priority 2", "Super Bit Arabia Industrial Company", ""],
+  ["Priority 2", "Company Al Maaden Alfawalithiya", ""],
+  ["Priority 3", "A. N. Al Odan & Sons Industrial Company", ""],
+  ["Priority 3", "Abdulmohsin Abdulaziz Al Jabr Trading Co.", ""],
+  ["Priority 3", "Al Mnjal Trading Est", ""],
+  ["Priority 3", "Al Naheem Industry Company", ""],
+  ["Priority 3", "Al Naher Al Sati Factory for Industry", ""],
+  ["Priority 3", "Al Qasreen Company", ""],
+  ["Priority 3", "Al Sofouf Al Wataniya Factory Co. (RFUFCO)", ""],
+  ["Priority 3", "Ali Mohammed Al-Shamrani Company for Industry", ""],
+  ["Priority 3", "Badge Advanced Industrial Company", ""],
+  ["Priority 3", "Establishment Rashid Salem Al Shaye for Equipment", ""],
+  ["Priority 3", "FABTECH", ""],
+  ["Priority 3", "Gulf Powerbeat - KSA", ""],
+  ["Priority 3", "Industries World", ""],
+  ["Priority 3", "INQLHA", ""],
+  ["Priority 3", "Kasal Al Khair Trading Establishment", ""],
+  ["Priority 3", "Kayan & Tamoh for Trading", ""],
+  ["Priority 3", "Machinery Technology Trading Est", ""],
+  ["Priority 3", "Masader Multi Co. Ltd.", ""],
+  ["Priority 3", "Multitrade Group Co.", ""],
+  ["Priority 3", "New Solutions Co.", ""],
+  ["Priority 3", "Onyx Gate For Trading", ""],
+  ["Priority 3", "Racs Company for Quality Certification Services", ""],
+  ["Priority 3", "Ramasko Packaging Systems", ""],
+  ["Priority 3", "Rukn Al Hana Est.", ""],
+  ["Priority 3", "Safeland Technical Supplies", ""],
+  ["Priority 3", "Tabatan Die Cutting", ""],
+  ["Priority 3", "Trading Company for Services Solutions - TCS Arabia", ""],
+  ["Priority 3", "Zohair Riad Industrial Co.", ""],
+  ["Priority 3", "Sukuk Capital", ""],
+  ["Priority 3", "Rased", ""],
+  ["Priority 3", "Madar Logistics Platform", ""],
+  ["Priority 1", "REDA Chemicals", "Mohammed from sales at REDA chemicals told me to visit their office on Sunday at 11am and present my pitch to his business manager"],
+  ["Priority 1", "Zamil Plastic Industries Company", "Met Abdullah, told me to email at info they will send to IT dept"],
+  ["Priority 1", "Al Watania for Industries", "Majed from marketing department told me to WhatsApp him after the event to ask him to connect to their ERP manager who is a Saudi guy"],
+  ["Priority 1", "3P Gulf Group (Gulf Packaging System Co.)", "Abdullah seems like a very good guy, said to reach out to him after the event. They use SAP S4HANA. He built a performance monitoring dashboard for production line using Claude, Vercel, and Supabase"],
+  ["Priority 2", "Qassim Factory for Corrugated Carton and Paper Products Company", "Ibrahim the technical sales guy is really good, he sounded very tired but he told me to send him this and our portfolio on email and follow up after the event"],
+  ["Priority 2", "Al Medan Project Company for Corrugated Cartons", "The guys didn't seem interested, but got the contact of the sales manager, so will send him email"],
+  ["Priority 2", "Highgate Plastic Company LLC", "Dude hates AI and was super pissed"],
+  ["Priority 2", "Wesam Advanced Plastic Company", "Got the contact of commercial guy. Said he will connect to ERP manager"],
+  ["Priority 2", "Al Tayar Plastic & Rubber Manufacturing Company", "Asked me to send him info so he will forward to his sales manager"],
+  ["Priority 2", "Higher Institute for Plastics Fabrication", "Met the outreach director named Ahmed, he loves the idea and told me to send the email but include a message on how HIPF can use it in internal operations"],
+  ["Priority 2", "Pure Polymers Factory", "Met the CEO, gave me his contact. Said he would do a quick meeting and involve the marketing department to see how it goes. They use Odoo ERP"],
+  ["Priority 3", "Gulf Integrated Industries Co.", "They do all dev in-house through a sister company"],
+  ["Priority 3", "Raweht_alasbegah Factory Co.", "They don't have IT, still rely on Excel and stuff. Ops manager said they're not ready, mainly for dispatching. Maybe show them what they could automate, but keep this priority 3"],
+];
+
+const STORAGE_KEY = "riyadhExpoTracker";
+
+function loadState() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+function keyFor(name) { return name; }
+
+function getEntry(name) {
+  if (!state[name]) {
+    state[name] = { done: false, interest: "", notes: "" };
+  }
+  return state[name];
+}
+
+const listEl = document.getElementById("list");
+const searchEl = document.getElementById("search");
+const filterGroupEl = document.getElementById("filterGroup");
+const filterInterestEl = document.getElementById("filterInterest");
+const statsEl = document.getElementById("stats");
+
+const groups = [...new Set(COMPANIES.map(c => c[0]))];
+groups.forEach(g => {
+  const opt = document.createElement("option");
+  opt.value = g;
+  opt.textContent = g;
+  filterGroupEl.appendChild(opt);
+});
+
+function render() {
+  const query = searchEl.value.trim().toLowerCase();
+  const groupFilter = filterGroupEl.value;
+  const interestFilter = filterInterestEl.value;
+
+  listEl.innerHTML = "";
+  let lastGroup = null;
+  let visibleCount = 0;
+  let doneCount = 0;
+
+  COMPANIES.forEach(([group, name, defaultNote]) => {
+    const entry = getEntry(name);
+    if (entry.done) doneCount++;
+
+    if (query && !name.toLowerCase().includes(query)) return;
+    if (groupFilter && group !== groupFilter) return;
+    if (filterInterestEl.value !== "" && entry.interest !== interestFilter) return;
+    if (interestFilter === "" && filterInterestEl.selectedIndex > 0 && entry.interest !== "") {
+      // handled by exact match above; no-op
+    }
+
+    visibleCount++;
+
+    if (group !== lastGroup) {
+      const h = document.createElement("div");
+      h.className = "group-header";
+      h.textContent = group;
+      listEl.appendChild(h);
+      lastGroup = group;
+    }
+
+    const card = document.createElement("div");
+    card.className = "card" + (entry.done ? " done" : "");
+
+    const top = document.createElement("div");
+    top.className = "card-top";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = entry.done;
+    checkbox.addEventListener("change", () => {
+      entry.done = checkbox.checked;
+      saveState(state);
+      render();
+    });
+
+    const nameWrap = document.createElement("div");
+    nameWrap.style.flex = "1";
+    const nameEl = document.createElement("div");
+    nameEl.className = "card-name";
+    nameEl.textContent = name;
+    const prioEl = document.createElement("div");
+    prioEl.className = "card-priority";
+    prioEl.textContent = group;
+    nameWrap.appendChild(nameEl);
+    nameWrap.appendChild(prioEl);
+
+    top.appendChild(checkbox);
+    top.appendChild(nameWrap);
+    card.appendChild(top);
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+
+    const interestSelect = document.createElement("select");
+    interestSelect.className = "interest";
+    interestSelect.dataset.val = entry.interest;
+    [["", "Unrated"], ["very", "Very interested"], ["interested", "Interested"], ["not", "Not interested"]].forEach(([val, label]) => {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = label;
+      if (val === entry.interest) opt.selected = true;
+      interestSelect.appendChild(opt);
+    });
+    interestSelect.addEventListener("change", () => {
+      entry.interest = interestSelect.value;
+      interestSelect.dataset.val = entry.interest;
+      saveState(state);
+      renderStats();
+    });
+
+    const notesArea = document.createElement("textarea");
+    notesArea.className = "notes";
+    notesArea.placeholder = "Add notes...";
+    notesArea.value = entry.notes || defaultNote || "";
+    if (!entry.notesInit) {
+      entry.notes = notesArea.value;
+      entry.notesInit = true;
+    }
+    notesArea.addEventListener("input", () => {
+      entry.notes = notesArea.value;
+      saveState(state);
+    });
+
+    body.appendChild(interestSelect);
+    body.appendChild(notesArea);
+    card.appendChild(body);
+
+    listEl.appendChild(card);
+  });
+
+  if (visibleCount === 0) {
+    listEl.innerHTML = '<div class="empty">No companies match your filters.</div>';
+  }
+
+  saveState(state);
+  renderStats();
+}
+
+function renderStats() {
+  const total = COMPANIES.length;
+  let done = 0, very = 0, interested = 0, not = 0;
+  COMPANIES.forEach(([, name]) => {
+    const e = getEntry(name);
+    if (e.done) done++;
+    if (e.interest === "very") very++;
+    if (e.interest === "interested") interested++;
+    if (e.interest === "not") not++;
+  });
+  statsEl.innerHTML = `
+    <span>${done}/${total} done</span>
+    <span style="color:var(--green)">${very} very interested</span>
+    <span style="color:var(--yellow)">${interested} interested</span>
+    <span style="color:var(--red)">${not} not interested</span>
+  `;
+}
+
+searchEl.addEventListener("input", render);
+filterGroupEl.addEventListener("change", render);
+filterInterestEl.addEventListener("change", render);
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("Reset all checkmarks, notes, and ratings? This cannot be undone.")) {
+    state = {};
+    saveState(state);
+    render();
+  }
+});
+
+render();
+</script>
+
+</body>
+</html>
