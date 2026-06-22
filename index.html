@@ -155,12 +155,33 @@
     font-size: 0.8rem;
     cursor: pointer;
   }
+  .data-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .data-actions button {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
 <h1>Riyadh Industrial Week Expo</h1>
 <div class="subtitle">Company tracker &mdash; tick off, rate interest, add notes</div>
+
+<div class="data-actions">
+  <button id="exportBtn">Export JSON</button>
+  <button id="importBtn">Import JSON</button>
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+</div>
 
 <div class="controls">
   <input type="text" id="search" placeholder="Search company...">
@@ -444,6 +465,40 @@ function renderStats() {
 searchEl.addEventListener("input", render);
 filterGroupEl.addEventListener("change", render);
 filterInterestEl.addEventListener("change", render);
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `riyadh-expo-tracker-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+const importFileEl = document.getElementById("importFile");
+document.getElementById("importBtn").addEventListener("click", () => {
+  importFileEl.click();
+});
+importFileEl.addEventListener("change", () => {
+  const file = importFileEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
+      if (!confirm("Import this data? It will overwrite your current checkmarks, notes, and ratings.")) return;
+      state = imported;
+      saveState(state);
+      render();
+    } catch (e) {
+      alert("Invalid JSON file.");
+    }
+  };
+  reader.readAsText(file);
+  importFileEl.value = "";
+});
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("Reset all checkmarks, notes, and ratings? This cannot be undone.")) {
