@@ -282,19 +282,19 @@ const COMPANIES = [
   ["Priority 3", "Sukuk Capital", ""],
   ["Priority 3", "Rased", ""],
   ["Priority 3", "Madar Logistics Platform", ""],
-  ["Priority 1", "REDA Chemicals", "Mohammed from sales at REDA chemicals told me to visit their office on Sunday at 11am and present my pitch to his business manager"],
-  ["Priority 1", "Zamil Plastic Industries Company", "Met Abdullah, told me to email at info they will send to IT dept"],
-  ["Priority 1", "Al Watania for Industries", "Majed from marketing department told me to WhatsApp him after the event to ask him to connect to their ERP manager who is a Saudi guy"],
-  ["Priority 1", "3P Gulf Group (Gulf Packaging System Co.)", "Abdullah seems like a very good guy, said to reach out to him after the event. They use SAP S4HANA. He built a performance monitoring dashboard for production line using Claude, Vercel, and Supabase"],
-  ["Priority 2", "Qassim Factory for Corrugated Carton and Paper Products Company", "Ibrahim the technical sales guy is really good, he sounded very tired but he told me to send him this and our portfolio on email and follow up after the event"],
-  ["Priority 2", "Al Medan Project Company for Corrugated Cartons", "The guys didn't seem interested, but got the contact of the sales manager, so will send him email"],
-  ["Priority 2", "Highgate Plastic Company LLC", "Dude hates AI and was super pissed"],
-  ["Priority 2", "Wesam Advanced Plastic Company", "Got the contact of commercial guy. Said he will connect to ERP manager"],
-  ["Priority 2", "Al Tayar Plastic & Rubber Manufacturing Company", "Asked me to send him info so he will forward to his sales manager"],
-  ["Priority 2", "Higher Institute for Plastics Fabrication", "Met the outreach director named Ahmed, he loves the idea and told me to send the email but include a message on how HIPF can use it in internal operations"],
-  ["Priority 2", "Pure Polymers Factory", "Met the CEO, gave me his contact. Said he would do a quick meeting and involve the marketing department to see how it goes. They use Odoo ERP"],
-  ["Priority 3", "Gulf Integrated Industries Co.", "They do all dev in-house through a sister company"],
-  ["Priority 3", "Raweht_alasbegah Factory Co.", "They don't have IT, still rely on Excel and stuff. Ops manager said they're not ready, mainly for dispatching. Maybe show them what they could automate, but keep this priority 3"],
+  ["Priority 1", "REDA Chemicals", "Mohammed from sales at REDA chemicals told me to visit their office on Sunday at 11am and present my pitch to his business manager", true],
+  ["Priority 1", "Zamil Plastic Industries Company", "Met Abdullah, told me to email at info they will send to IT dept", true],
+  ["Priority 1", "Al Watania for Industries", "Majed from marketing department told me to WhatsApp him after the event to ask him to connect to their ERP manager who is a Saudi guy", true],
+  ["Priority 1", "3P Gulf Group (Gulf Packaging System Co.)", "Abdullah seems like a very good guy, said to reach out to him after the event. They use SAP S4HANA. He built a performance monitoring dashboard for production line using Claude, Vercel, and Supabase", true],
+  ["Priority 2", "Qassim Factory for Corrugated Carton and Paper Products Company", "Ibrahim the technical sales guy is really good, he sounded very tired but he told me to send him this and our portfolio on email and follow up after the event", true],
+  ["Priority 2", "Al Medan Project Company for Corrugated Cartons", "The guys didn't seem interested, but got the contact of the sales manager, so will send him email", true],
+  ["Priority 2", "Highgate Plastic Company LLC", "Dude hates AI and was super pissed", true],
+  ["Priority 2", "Wesam Advanced Plastic Company", "Got the contact of commercial guy. Said he will connect to ERP manager", true],
+  ["Priority 2", "Al Tayar Plastic & Rubber Manufacturing Company", "Asked me to send him info so he will forward to his sales manager", true],
+  ["Priority 2", "Higher Institute for Plastics Fabrication", "Met the outreach director named Ahmed, he loves the idea and told me to send the email but include a message on how HIPF can use it in internal operations", true],
+  ["Priority 2", "Pure Polymers Factory", "Met the CEO, gave me his contact. Said he would do a quick meeting and involve the marketing department to see how it goes. They use Odoo ERP", true],
+  ["Priority 3", "Gulf Integrated Industries Co.", "They do all dev in-house through a sister company", true],
+  ["Priority 3", "Raweht_alasbegah Factory Co.", "They don't have IT, still rely on Excel and stuff. Ops manager said they're not ready, mainly for dispatching. Maybe show them what they could automate, but keep this priority 3", true],
 ];
 
 const STORAGE_KEY = "riyadhExpoTracker";
@@ -345,8 +345,12 @@ function render() {
   let visibleCount = 0;
   let doneCount = 0;
 
-  COMPANIES.forEach(([group, name, defaultNote]) => {
+  COMPANIES.forEach(([group, name, defaultNote, defaultDone]) => {
     const entry = getEntry(name);
+    if (!entry.doneInit) {
+      if (defaultDone) entry.done = true;
+      entry.doneInit = true;
+    }
     if (entry.done) doneCount++;
 
     if (query && !name.toLowerCase().includes(query)) return;
